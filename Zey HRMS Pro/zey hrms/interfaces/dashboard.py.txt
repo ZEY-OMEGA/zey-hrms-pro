@@ -1,0 +1,49 @@
+
+```python
+# interfaces/dashboard.py
+# واجهة لوحة التحكم المركزية
+# مؤسسة زاي أوميقا للتكنولوجيا - [اسمك]، 2025
+
+from flask import Blueprint, render_template, jsonify, request
+from services.attendance_service import AttendanceService
+from security.auth_manager import AuthManager
+
+
+dashboard_bp = Blueprint('dashboard', __name__)
+service = AttendanceService()
+auth_manager = AuthManager()
+
+
+@dashboard_bp.route('/')
+def index():
+    session_token = request.cookies.get('session_token')
+    if not auth_manager.validate_session(session_token):
+        return jsonify({"error": "Unauthorized"}), 401
+    return render_template('hr_dashboard.html', lang='ar')
+
+
+@dashboard_bp.route('/api/daily-report/<date>')
+def get_daily_report(date):
+    session_token = request.cookies.get('session_token')
+    if not auth_manager.validate_session(session_token):
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    result = service.process_daily_attendance(date)
+    if result["status"] == "success":
+        return jsonify(result["attendance_report"])
+    else:
+        return jsonify({"error": result["error"]}), 500
+
+
+@dashboard_bp.route('/api/payroll-deductions/<date>')
+def get_payroll_deductions(date):
+    session_token = request.cookies.get('session_token')
+    if not auth_manager.validate_session(session_token):
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    result = service.process_daily_attendance(date)
+    if result["status"] == "success":
+        return jsonify(result["payroll_deductions"])
+    else:
+        return jsonify({"error": result["error"]}), 500
+```

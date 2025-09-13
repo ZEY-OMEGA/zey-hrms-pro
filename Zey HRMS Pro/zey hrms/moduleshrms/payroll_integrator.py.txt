@@ -1,0 +1,36 @@
+
+class PayrollIntegrator:
+    """
+    وحدة ربط نظام الحضور بحساب الرواتب
+    تُرسل بيانات التأخير والغياب إلى نظام الرواتب
+    """
+
+    def __init__(self):
+        self.base_salary_per_hour = 100  # درهم/ساعة (افتراضي)
+        self.deduction_per_late_minute = 0.5  # 0.5 درهم لكل دقيقة تأخير
+        print("🟢 تم تشغيل وحدة ربط الرواتب")
+
+    def calculate_deduction(self, lateness_minutes: int) -> float:
+        """
+        حساب الخصم بناءً على التأخير
+        """
+        return lateness_minutes * self.deduction_per_late_minute
+
+    def generate_payroll_data(self, daily_report: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        إنشاء بيانات الرواتب اليومية
+        """
+        payroll_data = {"date": daily_report["date"], "employees": {}}
+
+        for emp_id, summary in daily_report["summary"].items():
+            deduction = self.calculate_deduction(summary["lateness"])
+            payroll_data["employees"][emp_id] = {
+                "name": summary["name"],
+                "status": summary["status"],
+                "lateness_minutes": summary["lateness"],
+                "deduction_aed": round(deduction, 2),
+                "notes": "تم خصم الراتب بسبب التأخير" if deduction > 0 else "لا يوجد خصومات"
+            }
+
+        return payroll_data
+```

@@ -1,0 +1,75 @@
+
+from datetime import datetime, date
+from typing import Dict, Any, List
+from modules.hrms.biometric_interface import BiometricInterface
+from modules.hrms.attendance_engine import AttendanceEngine
+from modules.hrms.payroll_integrator import PayrollIntegrator
+
+
+class AttendanceService:
+    """
+    خدمة مركزية لإدارة دورة الحضور بالكامل
+    """
+
+    def __init__(self):
+        self.biometric = BiometricInterface()
+        self.engine = AttendanceEngine()
+        self.payroll = PayrollIntegrator()
+        print("🟢 تم تشغيل خدمة إدارة الحضور")
+
+    def process_daily_attendance(self, target_date: str) -> Dict[str, Any]:
+        """
+        العملية الكاملة ليوم واحد: مزامنة → تحليل → ربط بالرواتب
+        """
+        try:
+            # المرحلة 1: مزامنة البيانات من الأجهزة
+            sync_result = self.biometric.sync_all_devices(target_date)
+            if not sync_result["success"]:
+                return {"error": "فشل في مزامنة الأجهزة", "details": sync_result}
+
+            raw_data = sync_result["data"]
+
+            # المرحلة 2: تحليل بيانات الحضور
+            daily_report = self.engine.generate_daily_report(raw_data, target_date)
+
+            # المرحلة 3: ربط بالرواتب
+            payroll_data = self.payroll.generate_payroll_data(daily_report)
+
+            # المرحلة 4: تجميع النتيجة النهائية
+            result = {
+                "status": "success",
+                "timestamp": datetime.now().isoformat(),
+                "date_processed": target_date,
+                "attendance_report": daily_report,
+                "payroll_deductions": payroll_data
+            }
+
+            print(f"✅ تمت معالجة بيانات الحضور ليوم {target_date} بنجاح")
+            return result
+
+        except Exception as e:
+            error_result = {
+                "status": "error",
+                "timestamp": datetime.now().isoformat(),
+                "error_message": str(e),
+                "date_attempted": target_date
+            }
+            print(f"❌ خطأ في معالجة بيانات الحضور: {str(e)}")
+            return error_result
+
+    def get_employee_summary(self, employee_id: str, date_range: tuple) -> Dict[str, Any]:
+        """
+        الحصول على ملخص لأداء الموظف خلال فترة زمنية
+        """
+        # هذه الوظيفة ستُحسن لاحقًا باستخدام قاعدة بيانات
+        return {
+            "employee_id": employee_id,
+            "name": "موظف وهمي",
+            "period": f"{date_range[0]} إلى {date_range[1]}",
+            "total_days": 20,
+            "present_days": 18,
+            "absent_days": 1,
+            "late_days": 1,
+            "total_lateness_minutes": 75
+        }
+```

@@ -1,0 +1,51 @@
+
+```python
+# config/hrms_config.py
+# ملف التكوين المركزي لنظام Zey HRMS Pro
+# مؤسسة زاي أوميقا للتكنولوجيا - [اسمك]، 2025
+
+import os
+from datetime import timedelta
+
+
+class Config:
+    """
+    التكوين الأساسي للنظام
+    """
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'zey-omega-secret-key-2025'
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///hrms.db'
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    FLASK_ENV = os.environ.get('FLASK_ENV') or 'production'
+
+    # إعدادات الحضور
+    WORK_START_TIME = "07:30:00"
+    WORK_END_TIME = "15:30:00"
+    LATE_THRESHOLD_LIGHT = 10  # دقائق
+    LATE_THRESHOLD_HEAVY = 30  # دقائق
+
+    # إعدادات الرواتب
+    DEDUCTION_PER_LATE_MINUTE = 0.5  # درهم لكل دقيقة
+    BASE_SALARY_PER_HOUR = 100     # درهم
+
+    # إعدادات API
+    BIOMETRIC_API_TIMEOUT = 30     # ثواني
+    PAYROLL_SYNC_INTERVAL = 3600   # كل ساعة
+
+    # إعدادات الأمان
+    MAX_LOGIN_ATTEMPTS = 5
+    LOCKOUT_DURATION = timedelta(minutes=15)
+
+    # إعدادات الدعم الفني
+    SUPPORT_EMAIL = "support@zeyomega.ae"
+    SUPPORT_PHONE = "+971-4-XXXX-XXX"
+
+
+class DevelopmentConfig(Config):
+    FLASK_ENV = 'development'
+    DEBUG = True
+
+
+class ProductionConfig(Config):
+    FLASK_ENV = 'production'
+    DEBUG = False
+```

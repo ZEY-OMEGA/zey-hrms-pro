@@ -1,0 +1,109 @@
+
+class AttendanceEngine:
+    """
+    محرك ذكي لإدارة الحضور والانصراف
+    يحسب التأخير، الغياب، والانصراف المبكر
+    """
+
+    def __init__(self):
+        # مواعيد العمل في المدارس (افتراضي)
+        self.work_start = "07:30:00"
+        self.work_end = "15:30:00"
+        print("🟢 تم تشغيل محرك الحضور الذكي")
+
+    def parse_time(self, time_str: str) -> datetime:
+        """
+        تحويل السلسلة الزمنية إلى كائن زمني
+        """
+        return datetime.strptime(time_str.split("T")[1], "%H:%M:%S")
+
+    def calculate_lateness(self, check_in_time: str) -> int:
+        """
+        حساب التأخير بالدقائق
+        """
+        start = datetime.strptime(self.work_start, "%H:%M:%S")
+        actual = self.parse_time(check_in_time)
+        lateness = (actual - start).total_seconds() / 60
+        return max(0, int(lateness))
+
+    def is_absent(self, records: List[Dict[str, Any]]) -> bool:
+        """
+        التحقق من الغياب
+        """
+        check_ins = [r for r in records if r["type"] == "check-in"]
+        return len(check_ins) == 0
+
+    def analyze_employee(self, employee_id: str, records: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        تحليل حالة الموظف
+        """
+        if not records:
+            return {"status": "absent", "lateness_minutes": 0, "early_departure": 0}
+
+        lateness = 0
+        early_departure = 0
+
+        for record in records:
+            if record["type"] == "check-in":
+                lateness = self.calculate_lateness(record["timestamp"])
+            elif record["type"] == "check-out":
+                end_time = datetime.strptime(self.work_end, "%H:%M:%S")
+                actual_out = self.parse_time(record["timestamp"])
+                if actual_out < end_time:
+                    early_departure = (end_time - actual_out).total_seconds() / 60
+
+        status = "present"
+        if lateness > 30:
+            status = "late_heavy"
+        elif lateness > 10:
+            status = "late_light"
+
+        return {
+            "status": status,
+            "lateness_minutes": lateness,
+            "early_departure_minutes": early_departure
+        }
+
+    def generate_daily_report(self, all_records: List[Dict[str, Any]], date: str) -> Dict[str, Any]:
+        """
+        إنشاء تقرير يومي شامل
+        """
+        report = {
+            "date": date,
+            "total_employees": 0,
+            "present": 0,
+            "absent": 0,
+            "late": 0,
+            "heavy_late": 0,
+            "summary": {}
+        }
+
+        employees = {}
+        for record in all_records:
+            emp_id = record["employee_id"]
+            if emp_id not in employees:
+                employees[emp_id] = []
+            employees[emp_id].append(record)
+
+        report["total_employees"] = len(employees)
+
+        for emp_id, records in employees.items():
+            analysis = self.analyze_employee(emp_id, records)
+            summary = {
+                "name": records[0]["name"],
+                "status": analysis["status"],
+                "lateness": analysis["lateness_minutes"]
+            }
+            report["summary"][emp_id] = summary
+
+            if analysis["status"] == "absent":
+                report["absent"] += 1
+            elif analysis["status"] == "present":
+                report["present"] += 1
+            elif analysis["status"] == "late_light":
+                report["late"] += 1
+            elif analysis["status"] == "late_heavy":
+                report["heavy_late"] += 1
+
+        return report
+```

@@ -1,0 +1,174 @@
+from typing import Dict, Any
+import re
+from datetime import datetime
+
+
+class EthicsAndComplianceGuard:
+    """
+    الحارس الأخلاقي والتنظيمي لـ Zey Omega ERP
+    يمنع الأوامر التي تتعارض مع القيم الأخلاقية، سياسات الشركة، أو القوانين المحلية.
+    """
+
+    def __init__(self):
+        # الفئات المحظورة (أفعال)
+        self.prohibited_actions = {
+            "kill", "destroy", "delete", "erase", "terminate", "hack",
+            "invade", "steal", "exploit", "corrupt", "shutdown all",
+            "fire all", "close company", "disable system", "bypass security",
+            "override", "ignore", "cancel all", "remove all"
+        }
+
+        # الأهداف الحساسة (أهداف)
+        self.sensitive_targets = {
+            "all employees", "entire database", "core system", "national infrastructure",
+            "financial records", "personal data", "customer list", "employee salaries",
+            "government network", "public service", "critical facility"
+        }
+
+        # الأوامر التي تؤثر على الاستقرار العام (تخصيص إماراتي)
+        self.stability_threats = {
+            "ايقاف جميع الرواتب", "إيقاف جميع العقود", "حذف كل السجلات",
+            "إغلاق جميع الفروع", "فصل جميع الموظفين", "إيقاف المشروع الوطني",
+            "تجاوز نظام UAEPASS", "تجاهل منصة DPP", "عدم الالتزام بمعايير ICV"
+        }
+
+        # السياسات التنظيمية للإمارات (للاستخدام المستقبلي)
+        self.regulatory_policies = [
+            "ICV Certification Requirement",
+            "UAEPASS Authentication Standard",
+            "Federal Data Protection Law",
+            "Digital Government Strategy 2025",
+            "DPP Procurement Compliance"
+        ]
+
+        print("🟢 تم تشغيل Ethics & Compliance Guard بنجاح")
+        print("   الحماية متاحة بالعربية والإنجليزية")
+
+    def is_allowed(self, command: Dict[str, Any]) -> bool:
+        """
+        التحقق مما إذا كان الأمر مسموحًا به من حيث الأخلاقيات والامتثال
+        """
+        if not command or "action" not in command or "target" not in command:
+            return False
+
+        action = command.get("action", "").lower()
+        target = command.get("target", "").lower()
+        raw_input = command.get("raw", "").lower()
+
+        # التحقق من الأفعال المحظورة
+        if any(word in action for word in self.prohibited_actions):
+            return False
+
+        # التحقق من الأهداف الحساسة
+        if any(word in target for word in self.sensitive_targets):
+            return False
+
+        # التحقق من الأوامر التي تهدد الاستقرار (بالعربية)
+        arabic_patterns = [
+            r"كل", r"جميع", r"كلها", r"الجميع", r"إيقاف.*جميع", r"فصل.*جميع",
+            r"حذف.*كل", r"إغلاق.*كل", r"تجاوز", r"تجاهل", r"عدم الالتزام"
+        ]
+        for pattern in arabic_patterns:
+            if re.search(pattern, raw_input):
+                # تحقق من وجود كلمات خطيرة مع النمط
+                dangerous_contexts = ["رواتب", "عقود", "سجلات", "فروع", "موظفين"]
+                if any(ctx in raw_input for ctx in dangerous_contexts):
+                    return False
+
+        # أمثلة على قواعد محلية (Emirati-specific rules)
+        if any(threat in raw_input for threat in self.stability_threats):
+            return False
+
+        return True
+
+    def why_blocked(self, command: Dict[str, Any]) -> str:
+        """
+        شرح سبب رفض الأمر بلغة واضحة وبسيطة (عربي/إنجليزي)
+        """
+        raw_input = command.get("raw", "")
+        lower_raw = raw_input.lower()
+
+        # كشف اللغة
+        lang = "ar" if any(c in raw_input for c in "أبتثجحخدذرزسشصضطظعغفقكلمنهوىي") else "en"
+
+        # التحقق من الأسباب المختلفة
+        if any(word in lower_raw for word in ["fire all", "close company", "ايقاف جميع", "فصل جميع"]):
+            if lang == "ar":
+                return "هذا الأمر قد يؤثر على الاستقرار الوظيفي الجماعي ولا يمكن تنفيذه بدون موافقة عليا."
+            else:
+                return "This action may impact collective employment stability and requires senior approval."
+
+        if any(word in lower_raw for word in ["delete", "destroy", "حذف", "تدمير"]):
+            if lang == "ar":
+                return "هذا الأمر قد يؤدي إلى فقدان بيانات حيوية ولا يمكن تنفيذه بدون مراجعة أمنية."
+            else:
+                return "This action may lead to critical data loss and requires security review."
+
+        if any(word in lower_raw for word in ["bypass", "تجاوز", "تجاهل"]):
+            if lang == "ar":
+                return "تجاوز أنظمة الأمان أو الامتثال غير مسموح به وفقًا لسياسات الحكومة الرقمية 2025."
+            else:
+                return "Bypassing security or compliance systems is not permitted under Digital Government Strategy 2025."
+
+        if any(word in lower_raw for word in ["all employees", "جميع الموظفين"]):
+            if lang == "ar":
+                return "لا يمكن تنفيذ إجراءات جماعية على جميع الموظفين مباشرة. يُرجى تحديد نطاق محدد."
+            else:
+                return "Mass actions on all employees are restricted. Please specify a defined scope."
+
+        # السبب الافتراضي
+        if lang == "ar":
+            return "هذا الأمر يحتوي على عناصر غير متوافقة مع المعايير الأمنية أو الأخلاقية."
+        else:
+            return "This command contains elements incompatible with security or ethical standards."
+
+    def get_compliance_status(self) -> Dict[str, Any]:
+        """
+        الحصول على حالة الامتثال العامة للنظام
+        """
+        return {
+            "timestamp": datetime.now().isoformat(),
+            "policies_enforced": len(self.regulatory_policies),
+            "prohibited_actions_count": len(self.prohibited_actions),
+            "sensitive_targets_monitored": len(self.sensitive_targets),
+            "status": "compliant",
+            "region": "UAE"
+        }
+
+    def log_decision(self, command: Dict[str, Any], allowed: bool, reason: str = ""):
+        """
+        تسجيل القرار للمراجعة والتدقيق
+        """
+        log_entry = {
+            "timestamp": datetime.now().isoformat(),
+            "command": command.get("raw"),
+            "action": command.get("action"),
+            "target": command.get("target"),
+            "allowed": allowed,
+            "reason": reason,
+            "module": "Ethics & Compliance Guard"
+        }
+        # في البيئة الحقيقية، سيتم إرسال هذا السجل إلى نظام مركزي
+        print(f"📝 LOG: {'تم السماح' if allowed else 'تم الرفض'} بأمر '{command.get('raw')}' | السبب: {reason}")
+
+    def validate_and_respond(self, command: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        الدالة المركزية: التحقق + الرفض + الشرح + التسجيل
+        """
+        is_allowed = self.is_allowed(command)
+
+        result = {
+            "command": command,
+            "allowed": is_allowed,
+            "explanation": self.why_blocked(command) if not is_allowed else "تم السماح بالأمر بنجاح.",
+            "guard": "active"
+        }
+
+        # تسجيل القرار
+        self.log_decision(
+            command=command,
+            allowed=is_allowed,
+            reason=result["explanation"]
+        )
+
+        return result

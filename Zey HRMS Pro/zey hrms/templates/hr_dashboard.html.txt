@@ -1,0 +1,92 @@
+
+```html
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>Zey HRMS Pro - لوحة الموارد البشرية</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background: #f0f2f5; }
+        .container { max-width: 1200px; margin: auto; }
+        .header { text-align: center; color: #1e3c72; margin-bottom: 30px; }
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 30px; }
+        .stat-card { background: white; padding: 15px; border-radius: 10px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .stat-value { font-size: 2em; font-weight: bold; color: #1e3c72; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        th, td { padding: 12px; text-align: center; border-bottom: 1px solid #ddd; }
+        th { background-color: #1e3c72; color: white; }
+        tr:hover { background-color: #f5f5f5; }
+        .status-absent { color: #e74c3c; }
+        .status-late { color: #f39c12; }
+        .status-present { color: #2ecc71; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>نظام Zey HRMS Pro</h1>
+            <p>نظام إدارة الحضور والانصراف الذكي</p>
+        </div>
+
+        <div class="stats" id="stats">
+            <div class="stat-card"><h3>إجمالي الموظفين</h3><div class="stat-value">-</div></div>
+            <div class="stat-card"><h3>حاضر</h3><div class="stat-value">-</div></div>
+            <div class="stat-card"><h3>متأخر</h3><div class="stat-value">-</div></div>
+            <div class="stat-card"><h3>غائب</h3><div class="stat-value">-</div></div>
+        </div>
+
+        <h2>تفاصيل الحضور</h2>
+        <table id="attendanceTable">
+            <thead>
+                <tr>
+                    <th>الاسم</th>
+                    <th>الحالة</th>
+                    <th>التأخير (دقيقة)</th>
+                    <th>الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script>
+        function updateDashboard(data) {
+            document.querySelector("#stats .stat-card:nth-child(1) .stat-value").textContent = data.total_employees || 0;
+            document.querySelector("#stats .stat-card:nth-child(2) .stat-value").textContent = data.present || 0;
+            document.querySelector("#stats .stat-card:nth-child(3) .stat-value").textContent = (data.late + data.heavy_late) || 0;
+            document.querySelector("#stats .stat-card:nth-child(4) .stat-value").textContent = data.absent || 0;
+
+            const tbody = document.querySelector("#attendanceTable tbody");
+            tbody.innerHTML = "";
+            Object.values(data.summary || {}).forEach(emp => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${emp.name}</td>
+                    <td class="status-${emp.status}">${getStatusText(emp.status)}</td>
+                    <td>${emp.lateness}</td>
+                    <td><button onclick="notify('${emp.name}')">إرسال تنبيه</button></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function getStatusText(status) {
+            const map = {"present": "حاضر", "late_light": "متأخر", "late_heavy": "متأخر بشدة", "absent": "غائب"};
+            return map[status] || status;
+        }
+
+        function notify(name) {
+            alert(`تم إرسال تنبيه إلى ${name}`);
+        }
+
+        setInterval(() => {
+            fetch('/api/hr/status').then(r => r.json()).then(updateDashboard);
+        }, 5000);
+
+        // تحميل أولي
+        fetch('/api/hr/status').then(r => r.json()).then(updateDashboard);
+    </script>
+</body>
+</html>
+```

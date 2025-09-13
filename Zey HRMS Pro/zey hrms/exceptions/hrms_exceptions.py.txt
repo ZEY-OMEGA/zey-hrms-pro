@@ -1,0 +1,42 @@
+
+```python
+# exceptions/hrms_exceptions.py
+# استثناءات مخصصة لنظام الموارد البشرية
+# مؤسسة زاي أوميقا للتكنولوجيا - [اسمك]، 2025
+
+
+class HrmsBaseError(Exception):
+    """الاستثناء الأساسي لجميع أخطاء النظام"""
+    pass
+
+
+class DeviceConnectionError(HrmsBaseError):
+    """خطأ في اتصال جهاز البصمة"""
+    def __init__(self, device_id: str, message: str = None):
+        self.device_id = device_id
+        self.message = message or f"فشل الاتصال بالجهاز {device_id}"
+        super().__init__(self.message)
+
+
+class InvalidAttendanceDataError(HrmsBaseError):
+    """بيانات الحضور غير صالحة"""
+    def __init__(self, employee_id: str, message: str = None):
+        self.employee_id = employee_id
+        self.message = message or f"بيانات الحضور غير صالحة للموظف {employee_id}"
+        super().__init__(self.message)
+
+
+class PayrollIntegrationError(HrmsBaseError):
+    """خطأ في ربط نظام الرواتب"""
+    def __init__(self, message: str):
+        self.message = message
+        super().__init__(self.message)
+
+
+class ConfigurationError(HrmsBaseError):
+    """خطأ في ملف التكوين"""
+    def __init__(self, setting_name: str, message: str = None):
+        self.setting_name = setting_name
+        self.message = message or f"إعداد التكوين '{setting_name}' غير صالح أو مفقود"
+        super().__init__(self.message)
+```

@@ -1,0 +1,69 @@
+اختبارات متكاملة
+
+```python
+# tests/test_hrmѕ.py
+# اختبارات وحدة شاملة لنظام Zey HRMS Pro
+# مؤسسة زاي أوميقا للتكنولوجيا - [اسمك]، 2025
+
+import unittest
+from datetime import datetime
+from modules.hrms.biometric_interface import BiometricInterface
+from modules.hrms.attendance_engine import AttendanceEngine
+from modules.hrms.payroll_integrator import PayrollIntegrator
+from services.attendance_service import AttendanceService
+
+
+class TestBiometricInterface(unittest.TestCase):
+    def setUp(self):
+        self.interface = BiometricInterface()
+
+    def test_fetch_valid_device_data(self):
+        data = self.interface.fetch_attendance_data("device_001", "2025-09-15")
+        self.assertIsInstance(data, list)
+        self.assertGreater(len(data), 0)
+
+    def test_fetch_invalid_device_data(self):
+        data = self.interface.fetch_attendance_data("invalid_device", "2025-09-15")
+        self.assertEqual(data, [])
+
+
+class TestAttendanceEngine(unittest.TestCase):
+    def setUp(self):
+        self.engine = AttendanceEngine()
+
+    def test_calculate_lateness_on_time(self):
+        lateness = self.engine.calculate_lateness("2025-09-15T07:25:00")
+        self.assertEqual(lateness, 0)
+
+    def test_calculate_lateness_late(self):
+        lateness = self.engine.calculate_lateness("2025-09-15T08:00:00")
+        self.assertEqual(lateness, 30)
+
+    def test_analyze_absent_employee(self):
+        analysis = self.engine.analyze_employee("EMP-999", [])
+        self.assertEqual(analysis["status"], "absent")
+
+
+class TestPayrollIntegrator(unittest.TestCase):
+    def setUp(self):
+        self.payroll = PayrollIntegrator()
+
+    def test_calculate_deduction(self):
+        deduction = self.payroll.calculate_deduction(20)
+        self.assertEqual(deduction, 10.0)
+
+
+class TestAttendanceService(unittest.TestCase):
+    def setUp(self):
+        self.service = AttendanceService()
+
+    def test_process_daily_attendance_success(self):
+        result = self.service.process_daily_attendance("2025-09-15")
+        self.assertEqual(result["status"], "success")
+        self.assertIn("attendance_report", result)
+        self.assertIn("payroll_deductions", result)
+
+
+if __name__ == '__main__':
+    unittest.main()
+```

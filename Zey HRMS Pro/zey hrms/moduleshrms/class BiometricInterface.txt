@@ -1,0 +1,58 @@
+import requests
+from datetime import datetime, timedelta
+from typing import Dict, Any
+
+
+class BiometricInterface:
+    """
+    واجهة افتراضية للتواصل مع أجهزة البصمة في المدارس
+    """
+
+    def __init__(self):
+        self.devices = {
+            "device_001": {"location": "مدرسة المستقبل، دبي", "status": "online"},
+            "device_002": {"location": "ثانوية النخبة، أبوظبي", "status": "online"}
+        }
+        print("🟢 تم تشغيل واجهة أجهزة البصمة")
+
+    def fetch_attendance_data(self, device_id: str, date: str) -> list:
+        """
+        جلب بيانات الحضور من جهاز البصمة
+        """
+        if device_id not in self.devices or self.devices[device_id]["status"] != "online":
+            return []
+
+        # بيانات وهمية لتجربة النظام
+        sample_data = [
+            {
+                "employee_id": "EMP-1001",
+                "name": "أحمد محمد",
+                "timestamp": f"{date}T07:45:30",
+                "type": "check-in"
+            },
+            {
+                "employee_id": "EMP-1002",
+                "name": "فاطمة علي",
+                "timestamp": f"{date}T08:05:12",
+                "type": "check-in"
+            },
+            {
+                "employee_id": "EMP-1003",
+                "name": "خالد سعيد",
+                "timestamp": f"{date}T07:30:45",
+                "type": "check-in"
+            }
+        ]
+        return sample_data
+
+    def sync_all_devices(self, date: str) -> Dict[str, Any]:
+        """
+        مزامنة جميع الأجهزة
+        """
+        all_records = []
+        for device_id in self.devices:
+            records = self.fetch_attendance_data(device_id, date)
+            all_records.extend(records)
+        
+        print(f"🔄 تم مزامنة {len(all_records)} سجلاً من {len(self.devices)} أجهزة")
+        return {"success": True, "total_records": len(all_records), "data": all_records}

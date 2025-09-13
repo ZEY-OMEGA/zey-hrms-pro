@@ -1,0 +1,83 @@
+
+```python
+# interfaces/voice_interface.py
+# واجهة الأوامر الصوتية بالعربية
+# مؤسسة زاي أوميقا للتكنولوجيا - [اسمك]، 2025
+
+import speech_recognition as sr
+from gtts import gTTS
+import os
+from datetime import datetime
+
+
+class VoiceInterface:
+    """
+    واجهة صوتية ثنائية اللغة (عربي/إنجليزي)
+    تقبل أوامر مثل: "زاي، أظهر تقارير اليوم"، "زاي، أوقف جميع الموظفين"
+    """
+
+    def __init__(self):
+        self.recognizer = sr.Recognizer()
+        self.microphone = sr.Microphone()
+        self.activation_word = "زاي"
+        print("🟢 تم تشغيل واجهة الأوامر الصوتية")
+
+    def listen_for_command(self) -> str:
+        """استمع إلى الميكروفون واعرض النص المنطوق"""
+        with self.microphone as source:
+            print("🗣️ يستمع...")
+            self.recognizer.adjust_for_ambient_noise(source)
+            audio = self.recognizer.listen(source)
+
+        try:
+            text = self.recognizer.recognize_google(audio, language="ar-SA")
+            print(f"تم التعرف: {text}")
+            return text.lower()
+        except sr.UnknownValueError:
+            self.speak("لم أفهم ذلك.")
+            return ""
+        except sr.RequestError:
+            self.speak("عذرًا، هناك مشكلة في الاتصال.")
+            return ""
+
+    def speak(self, text: str):
+        """نطق النص بصوت واضح"""
+        tts = gTTS(text=text, lang='ar', slow=False)
+        filename = "response.mp3"
+        tts.save(filename)
+        os.system(f"mpg321 {filename} > /dev/null 2>&1")  # Linux
+        # os.system(f"start {filename}")  # Windows
+        os.remove(filename)
+
+    def process_voice_command(self, command: str) -> bool:
+        """معالجة الأمر الصوتي"""
+        if self.activation_word not in command:
+            return False
+
+        if "تقارير اليوم" in command or "تقرير اليوم" in command:
+            self.speak("جاري جلب تقرير اليوم...")
+            # هنا يمكن استدعاء واجهة برمجة التطبيقات
+            self.speak("تم عرض التقرير على الشاشة.")
+            return True
+
+        elif "أوقف جميع الموظفين" in command:
+            # تمرير الأمر إلى النواة الذكية
+            from core.decision_trigger import UCCPProcessor
+            uccp = UCCPProcessor()
+            command_obj = {
+                "raw": command,
+                "action": "stop",
+                "target": "all employees"
+            }
+            response = uccp.execute(command_obj)
+            self.speak(response["explanation"])
+            return True
+
+        elif "عرض الإحصائيات" in command:
+            self.speak("جاري عرض الإحصائيات على الشاشة.")
+            return True
+
+        else:
+            self.speak("لا أستطيع تنفيذ هذا الأمر حاليًا.")
+            return False
+```

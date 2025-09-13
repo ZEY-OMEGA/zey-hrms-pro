@@ -1,0 +1,203 @@
+from typing import Dict, Any, List, Tuple
+import numpy as np
+import hashlib
+from datetime import datetime
+
+
+class CoherenceChain:
+    """
+    القانون 9: السلسلة التماسكية (Coherence Chain)
+    تسجيل آمن ومتسلسل لكل عملية باستخدام SHAKE-256
+    """
+
+    def __init__(self):
+        self.chain = []
+        self.last_hash = "0" * 64
+
+    def add_record(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        record = {
+            "timestamp": datetime.now().isoformat(),
+            "data": data,
+            "prev_hash": self.last_hash
+        }
+        record_str = f"{record['data']}{record['prev_hash']}"
+        self.last_hash = hashlib.shake_256(record_str.encode()).hexdigest(32)
+        record["hash"] = self.last_hash
+        self.chain.append(record)
+        return record
+
+    def get_chain(self) -> List[Dict[str, Any]]:
+        return self.chain
+
+    def verify_chain(self) -> bool:
+        for i in range(1, len(self.chain)):
+            current = self.chain[i]
+            prev = self.chain[i-1]
+            record_str = f"{current['data']}{prev['hash']}"
+            if hashlib.shake_256(record_str.encode()).hexdigest(32) != current["hash"]:
+                return False
+        return True
+
+
+class ATSCorePro:
+    """
+    ATSCorePro Engine - المحرك الذكي المتقدم
+    """
+
+    def __init__(self):
+        self.v = 1.0
+        self.g = None
+        self.eta = 0.0
+        self.phase = "standby"
+        self.history = []
+        self.coherence_chain = CoherenceChain()
+
+        self.lambda_cost = 0.8
+        self.alpha_hex = 0.1
+        self.beta_base = 0.5
+
+    def enhanced_balance(self, state: Dict[str, Any]) -> float:
+        P = state.get("connections", 1)
+        NP = state.get("gaps", 1)
+        base_balance = (P * NP) / (1 + abs(P - NP) + 0.8*0.7)
+        angles = state.get("angles", [])
+        if angles:
+            hex_bonus = np.mean([np.cos(6 * theta)**2 for theta in angles])
+        else:
+            hex_bonus = 0
+        return base_balance * (1 + self.alpha_hex * hex_bonus)
+
+    def smoothness(self, tasks: List[Dict[str, Any]]) -> float:
+        if not tasks:
+            return 0.0
+        durations = [task.get("duration", 0) for task in tasks]
+        mean_d = np.mean(durations)
+        deviations = [abs(d - mean_d) for d in durations]
+        return np.mean([np.exp(-self.beta_base * dev) for dev in deviations])
+
+    def dispersion(self, tasks: List[Dict[str, Any]]) -> float:
+        if len(tasks) < 2:
+            return 0.0
+        durations = [task.get("duration", 0) for task in tasks]
+        return np.var(durations)
+
+    def self_integration_factor(self) -> float:
+        if len(self.history) < 2:
+            return self.beta_base
+        recent_v = [e["v"] for e in self.history[-3:]]
+        trend = recent_v[-1] - recent_v[0]
+        return 1 / (1 + np.exp(-trend))
+
+    def calculate_coherence(self) -> float:
+        if not self.history:
+            return 1.0
+        total_integral = 0.0
+        beta = self.self_integration_factor()
+        for event in self.history:
+            state = event.get("state", {})
+            tasks = event.get("tasks", [])
+            B_plus = self.enhanced_balance(state)
+            S = self.smoothness(tasks)
+            D = self.dispersion(tasks)
+            cost_penalty = np.exp(-self.lambda_cost * D)
+            integrand = beta * B_plus * S * cost_penalty
+            total_integral += integrand
+        coherence = min(1.0, total_integral / len(self.history))
+        return coherence
+
+    def predict_next_quality(self) -> float:
+        if len(self.history) < 2:
+            return self.current_quality()
+        q_now = self.current_quality()
+        q_prev = self.history[-2].get("quality", q_now)
+        predicted = q_now + (q_now - q_prev)
+        return max(0.0, min(1.0, predicted))
+
+    def current_quality(self) -> float:
+        dummy_state = {"connections": 5, "gaps": 2}
+        dummy_tasks = [{"duration": 10}, {"duration": 12}, {"duration": 8}]
+        B_plus = self.enhanced_balance(dummy_state)
+        S = self.smoothness(dummy_tasks)
+        return B_plus * S
+
+    def find_optimal_hub(self, locations: List[Dict[str, Any]]) -> Dict[str, Any]:
+        best_score = -1
+        best_location = None
+        for loc in locations:
+            density = loc.get("population_density", 1)
+            balance = self.enhanced_balance({"connections": density, "gaps": 10-density})
+            score = density * balance
+            if score > best_score:
+                best_score = score
+                best_location = loc
+        return best_location or locations[0]
+
+    def optimize_path_with_wave(self, path: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
+        if len(path) < 2:
+            return path
+        distances = [np.linalg.norm(np.array(path[i]) - np.array(path[i+1])) for i in range(len(path)-1)]
+        avg_distance = np.mean(distances)
+        new_path = []
+        for i in range(len(path) - 1):
+            p1, p2 = path[i], path[i+1]
+            distance = np.linalg.norm(np.array(p1) - np.array(p2))
+            new_path.append(p1)
+            if distance > 2 * avg_distance:
+                midpoint = ((p1[0]+p2[0])/2, (p1[1]+p2[1])/2)
+                new_path.append(midpoint)
+        new_path.append(path[-1])
+        return new_path
+
+    def verify(self, state: Dict[str, Any]) -> float:
+        self.v = self.calculate_coherence()
+        return self.v
+
+    def manage_phases(self):
+        if self.phase == "standby" and self.v < 0.7 and self.g:
+            self.phase = "activation"
+        elif self.phase == "activation" and self.v >= 0.7 and self.eta > 0.3:
+            self.phase = "amplification"
+        elif self.phase == "amplification" and self.eta > 0.7 and self.is_stable():
+            self.phase = "harvesting"
+        elif self.phase == "harvesting" and self.eta > 0.95:
+            self.phase = "recalibration"
+        elif self.phase == "recalibration" and self.v >= 0.7:
+            self.reset()
+
+    def is_stable(self) -> bool:
+        if len(self.history) < 2:
+            return True
+        recent_dispersion = [self.dispersion(e.get("tasks", [])) for e in self.history[-3:]]
+        return np.std(recent_dispersion) < 0.1
+
+    def reset(self):
+        self.phase = "standby"
+        self.eta = 0.0
+        self.g = None
+        print("✅ النظام جاهز لدورة جديدة")
+
+    def update(self, state: Dict[str, Any], new_goal: str = None):
+        if new_goal and not self.g:
+            self.g = new_goal
+            print(f"🎯 تم تحديد الهدف: {new_goal}")
+        self.v = self.verify(state)
+        self.manage_phases()
+        if self.phase != "standby":
+            self.eta = min(1.0, self.eta + 0.1)
+        event_data = {
+            "phase": self.phase,
+            "v": round(self.v, 3),
+            "eta": round(self.eta, 3),
+            "goal": self.g,
+            "predicted_quality": round(self.predict_next_quality(), 3)
+        }
+        self.coherence_chain.add_record(event_data)
+        self.history.append({
+            "timestamp": datetime.now().isoformat(),
+            "state": state,
+            "phase": self.phase,
+            "v": self.v,
+            "eta": self.eta,
+            "goal": self.g
+        })
+        print(f"🔄 {self.phase.upper()} | v={self.v:.3f} | η={self.eta:.3f} | Goal='{self.g}'")

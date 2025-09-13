@@ -1,0 +1,93 @@
+
+```python
+# integration/api_bridge.py
+# جسر تكامل مع الأنظمة الخارجية
+# مؤسسة زاي أوميقا للتكنولوجيا - [اسمك]، 2025
+
+import requests
+import json
+from datetime import datetime
+from typing import Dict, Any, List
+
+
+class APIBridge:
+    """
+    وحدة مركزية للاتصال بالأنظمة الخارجية
+    """
+
+    def __init__(self):
+        # عناوين API لأنظمة الطرف الثالث
+        self.endpoints = {
+            "biometric": "https://api.biometric-provider.com/v1",
+            "payroll": "https://hrm.oraclecloud.com/api",
+            "dpp": "https://dpp.gov.ae/api/v1"
+        }
+        # مفاتيح المصادقة (في بيئة حقيقية: تخزن في متغيرات البيئة)
+        self.auth_tokens = {
+            "biometric": "token_biometric_123",
+            "payroll": "token_oracle_456",
+            "dpp": "token_dpp_789"
+        }
+        print("🟢 تم تشغيل جسر التكامل مع الأنظمة الخارجية")
+
+    def _make_request(self, system: str, endpoint: str, method: str = "GET", data: dict = None) -> Dict[str, Any]:
+        """الوظيفة العامة لإرسال طلب إلى نظام خارجي"""
+        url = f"{self.endpoints[system]}{endpoint}"
+        headers = {
+            "Authorization": f"Bearer {self.auth_tokens[system]}",
+            "Content-Type": "application/json"
+        }
+
+        try:
+            if method == "GET":
+                response = requests.get(url, headers=headers)
+            elif method == "POST":
+                response = requests.post(url, headers=headers, json=data)
+            elif method == "PUT":
+                response = requests.put(url, headers=headers, json=data)
+
+            if response.status_code in [200, 201]:
+                return {"success": True, "data": response.json()}
+            else:
+                return {"success": False, "error": response.text, "status_code": response.status_code}
+
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    def sync_with_payroll_system(self, payroll_data: Dict[str, Any]) -> Dict[str, Any]:
+        """مزامنة بيانات الرواتب مع نظام Oracle Cloud"""
+        result = self._make_request(
+            system="payroll",
+            endpoint="/deductions",
+            method="POST",
+            data=payroll_data
+        )
+        if result["success"]:
+            print("✅ تم رفع بيانات الخصومات بنجاح إلى نظام الرواتب")
+        else:
+            print(f"❌ فشل في رفع البيانات إلى نظام الرواتب: {result['error']}")
+        return result
+
+    def submit_tender_to_dpp(self, tender_details: Dict[str, Any]) -> Dict[str, Any]:
+        """إرسال مناقصة عبر منصة DPP"""
+        result = self._make_request(
+            system="dpp",
+            endpoint="/tenders",
+            method="POST",
+            data=tender_details
+        )
+        if result["success"]:
+            print("✅ تم تقديم المناقصة بنجاح عبر منصة DPP")
+        else:
+            print(f"❌ فشل في تقديم المناقصة: {result['error']}")
+        return result
+
+    def fetch_employee_data_from_dpp(self, employee_id: str) -> Dict[str, Any]:
+        """جلب بيانات الموظف من أنظمة الحكومة عبر DPP (افتراضي)"""
+        result = self._make_request(
+            system="dpp",
+            endpoint=f"/employees/{employee_id}",
+            method="GET"
+        )
+        return result.get("data", {}) if result["success"] else {}
+```

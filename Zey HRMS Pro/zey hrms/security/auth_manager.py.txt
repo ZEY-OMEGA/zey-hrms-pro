@@ -1,0 +1,85 @@
+(Authentication & Authorization)
+
+```python
+# security/auth_manager.py
+# مدير المصادقة والصلاحيات
+# مؤسسة زاي أوميقا للتكنولوجيا - [اسمك]، 2025
+
+import hashlib
+import secrets
+from datetime import datetime, timedelta
+from typing import Dict, Optional
+
+
+class AuthManager:
+    """
+    نظام مصادقة مبسط للأمثلة التعليمية
+    في بيئة حقيقية، يستخدم OAuth2 أو JWT
+    """
+
+    def __init__(self):
+        # تخزين وهمي للمستخدمين (في بيئة حقيقية: قاعدة بيانات)
+        self.users = {
+            "admin": {
+                "password_hash": self._hash_password("admin123"),
+                "role": "admin",
+                "failed_attempts": 0,
+                "locked_until": None
+            },
+            "principal": {
+                "password_hash": self._hash_password("prin123"),
+                "role": "principal",
+                "failed_attempts": 0,
+                "locked_until": None
+            }
+        }
+        self.active_sessions = {}
+        print("🟢 تم تشغيل مدير المصادقة")
+
+    def _hash_password(self, password: str) -> str:
+        """تشفير كلمة المرور"""
+        salt = "zey-salt-2025"
+        return hashlib.sha256((password + salt).encode()).hexdigest()
+
+    def authenticate(self, username: str, password: str) -> Dict[str, Any]:
+        """
+        محاولة تسجيل الدخول
+        """
+        user = self.users.get(username)
+        if not user:
+            return {"success": False, "error": "اسم المستخدم غير صحيح"}
+
+        # التحقق من القفل
+        if user["locked_until"] and datetime.now() < user["locked_until"]:
+            remaining = (user["locked_until"] - datetime.now()).seconds
+            return {"success": False, "error": f"الحساب مقفول. يرجى المحاولة بعد {remaining} ثانية"}
+
+        # التحقق من كلمة المرور
+        if user["password_hash"] != self._hash_password(password):
+            user["failed_attempts"] += 1
+            if user["failed_attempts"] >= 5:
+                user["locked_until"] = datetime.now() + timedelta(minutes=15)
+                return {"success": False, "error": "تم تجاوز عدد المحاولات. تم قفل الحساب لمدة 15 دقيقة"}
+            return {"success": False, "error": "كلمة المرور غير صحيحة"}
+
+        # نجاح التسجيل
+        user["failed_attempts"] = 0
+        session_token = secrets.token_urlsafe(32)
+        self.active_sessions[session_token] = {
+            "username": username,
+            "role": user["role"],
+            "created_at": datetime.now()
+        }
+        return {"success": True, "session_token": session_token, "role": user["role"]}
+
+    def validate_session(self, session_token: str) -> bool:
+        """التحقق من صلاحية الجلسة"""
+        return session_token in self.active_sessions
+
+    def logout(self, session_token: str) -> bool:
+        """تسجيل الخروج"""
+        if session_token in self.active_sessions:
+            del self.active_sessions[session_token]
+            return True
+        return False
+```
